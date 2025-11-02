@@ -15,37 +15,38 @@ export default function LoginScreen({ navigation }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
-  const onLogin = async () => {
-    if (!username || !password) {
-      Alert.alert("Thiếu thông tin", "Nhập đủ username và password");
+const onLogin = async () => {
+  if (!username || !password) {
+    Alert.alert("Thiếu thông tin", "Nhập đủ username và password");
+    return;
+  }
+
+  try {
+    const res = await fetch("http://10.0.2.2:3000/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      Alert.alert("Đăng nhập thất bại", data.error || "Có lỗi xảy ra");
       return;
     }
 
-    try {
-      const res = await fetch("http://10.0.2.2:3000/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
+    await AsyncStorage.setItem("token", data.token);
+    await AsyncStorage.setItem("role", data.role);
+    await AsyncStorage.setItem("userId", String(data.userId));
+    await AsyncStorage.setItem("username", username); // ← THÊM DÒNG NÀY
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        Alert.alert("Đăng nhập thất bại", data.error || "Có lỗi xảy ra");
-        return;
-      }
-
-      await AsyncStorage.setItem("token", data.token);
-      await AsyncStorage.setItem("role", data.role);
-      await AsyncStorage.setItem("userId", String(data.userId));
-
-      Alert.alert("Thành công", "Đăng nhập thành công!");
-      navigation.replace("Main", { role: data.role });
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Lỗi", "Không kết nối được tới server");
-    }
-  };
+    Alert.alert("Thành công", "Đăng nhập thành công!");
+    navigation.replace("Main", { role: data.role });
+  } catch (err) {
+    console.error(err);
+    Alert.alert("Lỗi", "Không kết nối được tới server");
+  }
+};
 
   return (
     <KeyboardAvoidingView

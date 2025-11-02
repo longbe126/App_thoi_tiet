@@ -6,6 +6,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/backgrounds/icon.png",
+    "newArchEnabled": true,
     "splash": {
       "image": "./assets/backgrounds/splash.png",
       "resizeMode": "contain",
@@ -18,16 +19,19 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "newArchEnabled": true
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/backgrounds/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
-      }
+      },
+      "newArchEnabled": true
     },
     "web": {
       "bundler": "metro"
-    }
+    },
+    "plugins": []
   }
 }

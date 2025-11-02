@@ -4,7 +4,6 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Feather } from '@expo/vector-icons';
 
-// Đường dẫn đúng (từ trong src gọi đến screens)
 import LoginScreen from "./screens/LoginScreen";
 import RegisterScreen from "./screens/RegisterScreen";
 import WeatherScreen from "./screens/WeatherScreen";
@@ -34,6 +33,11 @@ function OptionsNavigator() {
         component={ExportScreen} 
         options={{ title: 'Xuất dữ liệu' }} 
       />
+      <OptionsStack.Screen 
+        name="Logout" 
+        component={LogoutScreen} 
+        options={{ headerShown: false }} 
+      />
     </OptionsStack.Navigator>
   );
 }
@@ -49,11 +53,7 @@ function WeatherStack() {
       <WeatherStackNavigator.Screen 
         name="WeatherDetail" 
         component={WeatherDetailScreen} 
-        options={{ 
-          headerShown: true, 
-          title: 'Chi tiết thời tiết', 
-          headerBackTitle: 'Quay lại' 
-        }}
+        options={{ title: 'Chi tiết thời tiết' }}
       />
     </WeatherStackNavigator.Navigator>
   );
@@ -64,13 +64,12 @@ function MainTabs() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ color, size }) => {
-          const icons = { 
-            Weather: 'sun', 
-            Favorites: 'heart', 
-            History: 'clock', 
-            Options: 'settings' 
-          };
-          return <Feather name={icons[route.name]} size={size} color={color} />;
+          let iconName;
+          if (route.name === 'Weather') iconName = 'sun';
+          else if (route.name === 'Favorites') iconName = 'heart';
+          else if (route.name === 'History') iconName = 'clock';
+          else if (route.name === 'Options') iconName = 'settings';
+          return <Feather name={iconName} size={size} color={color} />;
         },
       })}
     >
@@ -103,14 +102,13 @@ function AdminTabs() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ color, size }) => {
-          const icons = { 
-            Weather: 'sun', 
-            Favorites: 'heart', 
-            History: 'clock', 
-            Admin: 'user-check', 
-            Options: 'settings' 
-          };
-          return <Feather name={icons[route.name]} size={size} color={color} />;
+          let iconName;
+          if (route.name === 'Weather') iconName = 'sun';
+          else if (route.name === 'Favorites') iconName = 'heart';
+          else if (route.name === 'History') iconName = 'clock';
+          else if (route.name === 'Admin') iconName = 'user-check';
+          else if (route.name === 'Options') iconName = 'settings';
+          return <Feather name={iconName} size={size} color={color} />;
         },
       })}
     >
@@ -162,16 +160,10 @@ export default function App() {
           options={{ headerShown: false }}
         >
           {({ route }) => {
-            // Kiểm tra an toàn params
             const role = route.params?.role || 'user';
             return role === "admin" ? <AdminTabs /> : <MainTabs />;
           }}
         </Stack.Screen>
-        <Stack.Screen 
-          name="Logout" 
-          component={LogoutScreen} 
-          options={{ headerShown: false }} 
-        />
       </Stack.Navigator>
     </NavigationContainer>
   );
