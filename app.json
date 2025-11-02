@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "BreezyBasicWeather",
+    "slug": "breezy-basic-weather",
+    "scheme": "breezybasicweather",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/backgrounds/icon.png",
+    "splash": {
+      "image": "./assets/backgrounds/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/backgrounds/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
