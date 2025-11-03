@@ -38,7 +38,12 @@ const onLogin = async () => {
     await AsyncStorage.setItem("token", data.token);
     await AsyncStorage.setItem("role", data.role);
     await AsyncStorage.setItem("userId", String(data.userId));
-    await AsyncStorage.setItem("username", username); // ← THÊM DÒNG NÀY
+    await AsyncStorage.setItem("username", username);
+
+    if (data.avatar_url) {
+      await AsyncStorage.setItem("avatar_url", data.avatar_url);
+    }
+    
 
     Alert.alert("Thành công", "Đăng nhập thành công!");
     navigation.replace("Main", { role: data.role });
