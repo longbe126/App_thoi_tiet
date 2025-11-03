@@ -99,15 +99,13 @@ export default function OptionsScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      {/* --- Phần thông tin người dùng --- */}
+      {/* --- thông tin người dùng --- */}
       <View style={styles.profileHeader}>
         <TouchableOpacity onPress={pickImage}>
           <View style={styles.avatar}>
-            {avatarUri ? (
-              // Nếu có avatar, hiển thị ảnh
+            {avatarUri ? (            
               <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
             ) : (
-              // Nếu không, hiển thị chữ cái đầu
               <Text style={styles.avatarText}>{username.charAt(0).toUpperCase()}</Text>
             )}
             <View style={styles.editIcon}>
@@ -118,7 +116,7 @@ export default function OptionsScreen({ navigation }) {
         <Text style={styles.username}>{username}</Text>
       </View>
 
-      {/* --- Phần danh sách tùy chọn --- */}
+      {/* --- danh sách tùy chọn --- */}
       <View style={styles.optionsList}>
         <OptionItem
           icon="alert-circle"
@@ -140,7 +138,7 @@ export default function OptionsScreen({ navigation }) {
   );
 }
 
-// --- STYLESHEET (Đã cập nhật) ---
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,

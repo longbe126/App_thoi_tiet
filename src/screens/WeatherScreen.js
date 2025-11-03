@@ -234,13 +234,26 @@ export default function WeatherScreen() {
     
     // Cấu hình biểu đồ theo theme
     const chartConfig = {
-        backgroundGradientFrom: "transparent",
-        backgroundGradientTo: "transparent",
-        color: (opacity = 1) => theme.text.replace('rgb', 'rgba').replace(')', `, ${opacity})`),
-        labelColor: (opacity = 1) => theme.subText.replace('rgb', 'rgba').replace(')', `, ${opacity})`),
-        strokeWidth: 1.5,
-        propsForDots: { r: "3", strokeWidth: "1", stroke: theme.text },
+        backgroundGradientFrom: theme.cardBg,
+        backgroundGradientTo: theme.cardBg,
+        color: (opacity = 1) => {
+            // Nếu là theme tối, dùng màu sáng; nếu sáng dùng màu tối
+            const lineColor = current.is_day ? 'rgba(102, 126, 234, ' : 'rgba(255, 255, 255, ';
+            return lineColor + opacity + ')';
+        },
+        labelColor: (opacity = 1) => {
+            const labelColor = current.is_day ? 'rgba(100, 100, 100, ' : 'rgba(200, 200, 200, ';
+            return labelColor + opacity + ')';
+        },
+        strokeWidth: 2,
+        propsForDots: { 
+            r: "4", 
+            strokeWidth: "2", 
+            stroke: current.is_day ? '#667eea' : '#fff',
+            fill: current.is_day ? '#667eea' : '#fff'
+        },
         propsForBackgroundLines: { strokeWidth: 0 },
+        decimalPlaces: 0,
     };
 
     return (
@@ -318,25 +331,31 @@ export default function WeatherScreen() {
                         <Text style={[styles.sectionTitle, { color: theme.text }]}>24 GIỜ TỚI</Text>
                         <View style={[styles.divider, { backgroundColor: theme.cardBorder }]} />
                         <View style={styles.chartContainer}>
-                            <LineChart
-                                data={{
-                                    labels: result.hourly.time.slice(0, 24).filter((_, i) => i % 3 === 0).map(t => new Date(t).getHours() + 'h'),
-                                    datasets: [{ 
-                                        data: result.hourly.temperature_2m.slice(0, 24).filter((_, i) => i % 3 === 0) 
-                                    }]
-                                }}
-                                width={screenWidth - 48}
-                                height={140}
-                                chartConfig={chartConfig}
-                                bezier
-                                withVerticalLines={false}
-                                withHorizontalLines={false}
-                                withInnerLines={false}
-                                withOuterLines={false}
-                                withVerticalLabels={true}
-                                withHorizontalLabels={false}
-                                style={{ marginLeft: -8 }}
-                            />
+                            <View style={[styles.chartWrapper, { 
+                                backgroundColor: current.is_day ? '#fff' : 'rgba(255,255,255,0.1)',
+                                borderRadius: 12,
+                                padding: 10,
+                            }]}>
+                                <LineChart
+                                    data={{
+                                        labels: result.hourly.time.slice(0, 24).filter((_, i) => i % 3 === 0).map(t => new Date(t).getHours() + 'h'),
+                                        datasets: [{ 
+                                            data: result.hourly.temperature_2m.slice(0, 24).filter((_, i) => i % 3 === 0) 
+                                        }]
+                                    }}
+                                    width={screenWidth - 68}
+                                    height={140}
+                                    chartConfig={chartConfig}
+                                    bezier
+                                    withVerticalLines={false}
+                                    withHorizontalLines={false}
+                                    withInnerLines={false}
+                                    withOuterLines={false}
+                                    withVerticalLabels={true}
+                                    withHorizontalLabels={false}
+                                    style={{ marginLeft: 0 }}
+                                />
+                            </View>
                         </View>
                     </View>
 
