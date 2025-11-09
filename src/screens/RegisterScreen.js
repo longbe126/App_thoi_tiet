@@ -5,158 +5,191 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  Image,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImagePicker from "expo-image-picker";
 
 export default function RegisterScreen({ navigation }) {
   const [username, setUsername] = useState("");
+  const [fullname, setFullname] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [avatar, setAvatar] = useState(null); // ảnh đại diện chọn từ thư viện
 
-  const onRegister = async () => {
-    if (!username || !email || !phone || !password) {
-      Alert.alert("Thiếu thông tin", "Vui lòng nhập đầy đủ Username, Email, SĐT và Password");
-      return;
+  // chọn ảnh y như OptionsScreen
+  const pickAvatar = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+    if (!result.canceled) {
+      setAvatar(result.assets[0].uri);
+    }
+  };
+
+  // upload ảnh sau khi đã đăng ký + có token
+  const uploadAvatar = async (token) => {
+    if (!avatar) return;
+
+    const formData = new FormData();
+    formData.append("avatar", {
+      uri: avatar,
+      name: "avatar.jpg",
+      type: "image/jpeg",
+    });
+
+    try {
+      await fetch("http://10.0.2.2:3000/upload-avatar", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + token,
+          // ❌ KHÔNG ĐƯỢC tự đặt Content-Type
+        },
+        body: formData,
+      });
+    } catch (err) {
+      console.log("Upload avatar error:", err);
+    }
+  };
+
+  // xử lý đăng ký
+  const handleRegister = async () => {
+    if (!username || !fullname || !email || !phone || !password) {
+      return Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin");
     }
 
     try {
       const res = await fetch("http://10.0.2.2:3000/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, email, phone, password }),
+        body: JSON.stringify({
+          username,
+          fullname,
+          email,
+          phone,
+          password,
+        }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        Alert.alert("Đăng ký thất bại", data.error || "Có lỗi xảy ra");
-        return;
+        return Alert.alert("Lỗi", data.error || "Đăng ký thất bại");
       }
+
+      // Lưu token để upload avatar
+      await AsyncStorage.setItem("token", data.token);
+      await AsyncStorage.setItem("role", data.role);
+      await AsyncStorage.setItem("userId", data.userId.toString());
+
+      // upload avatar
+      await uploadAvatar(data.token);
 
       Alert.alert("Thành công", "Đăng ký thành công!");
       navigation.replace("Login");
+
     } catch (err) {
-      console.error(err);
-      Alert.alert("Lỗi", "Không kết nối được tới server");
+      console.log("REG ERROR:", err);
+      Alert.alert("Lỗi", "Không thể kết nối server");
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <View style={styles.form}>
-        <Text style={styles.title}>🌤 Breezy Weather</Text>
-        <Text style={styles.subtitle}>Tạo tài khoản mới</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Đăng ký tài khoản</Text>
 
-        <TextInput
-          placeholder="Tên đăng nhập"
-          value={username}
-          onChangeText={setUsername}
-          style={styles.input}
-        />
+      <TextInput
+        style={styles.input}
+        placeholder="Họ và tên"
+        value={fullname}
+        onChangeText={setFullname}
+      />
 
-        <TextInput
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          style={styles.input}
-        />
+      <TextInput
+        style={styles.input}
+        placeholder="Tên đăng nhập"
+        value={username}
+        onChangeText={setUsername}
+      />
 
-        <TextInput
-          placeholder="Số điện thoại"
-          value={phone}
-          onChangeText={setPhone}
-          keyboardType="phone-pad"
-          style={styles.input}
-        />
+      <TextInput
+        style={styles.input}
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+      />
 
-        <TextInput
-          placeholder="Mật khẩu"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-          style={styles.input}
-        />
+      <TextInput
+        style={styles.input}
+        placeholder="Số điện thoại"
+        value={phone}
+        onChangeText={setPhone}
+      />
 
-        <TouchableOpacity style={styles.button} onPress={onRegister}>
-          <Text style={styles.buttonText}>ĐĂNG KÝ</Text>
-        </TouchableOpacity>
+      <TextInput
+        style={styles.input}
+        placeholder="Mật khẩu"
+        value={password}
+        secureTextEntry
+        onChangeText={setPassword}
+      />
 
-        <TouchableOpacity
-          style={styles.linkButton}
-          onPress={() => navigation.replace("Login")}
-        >
-          <Text style={styles.linkText}>Đã có tài khoản? Đăng nhập</Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+      {avatar && <Image source={{ uri: avatar }} style={styles.avatarPreview} />}
+
+      <TouchableOpacity style={styles.avatarBtn} onPress={pickAvatar}>
+        <Text style={{ color: "#fff" }}>Chọn ảnh đại diện</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.registerBtn} onPress={handleRegister}>
+        <Text style={styles.registerText}>Đăng ký</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+        <Text style={styles.loginLink}>Đã có tài khoản? Đăng nhập</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    backgroundColor: "#f5f7fa",
-    padding: 20,
-  },
-  form: {
-    backgroundColor: "#fff",
-    borderRadius: 15,
-    padding: 25,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 5,
-    elevation: 5,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 5,
-    color: "#4facfe",
-  },
-  subtitle: {
-    fontSize: 14,
-    textAlign: "center",
-    marginBottom: 20,
-    color: "#666",
-  },
+  container: { flex: 1, padding: 20, justifyContent: "center" },
+  title: { fontSize: 26, textAlign: "center", marginBottom: 20 },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
-    borderRadius: 10,
     padding: 12,
-    marginBottom: 15,
-    fontSize: 16,
-    backgroundColor: "#f9f9f9",
+    borderRadius: 8,
+    marginBottom: 12,
   },
-  button: {
-    backgroundColor: "#4facfe",
-    padding: 15,
-    borderRadius: 10,
+  avatarPreview: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    alignSelf: "center",
+    marginVertical: 10,
+  },
+  avatarBtn: {
+    backgroundColor: "#4fa0ff",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 20,
     alignItems: "center",
-    marginBottom: 10,
   },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 18,
-  },
-  linkButton: {
+  registerBtn: {
+    backgroundColor: "#4caf50",
+    padding: 14,
+    borderRadius: 8,
     alignItems: "center",
-    marginTop: 5,
   },
-  linkText: {
-    color: "#4facfe",
-    fontSize: 14,
+  registerText: { color: "#fff", fontSize: 16 },
+  loginLink: {
+    textAlign: "center",
+    marginTop: 16,
+    color: "#555",
     textDecorationLine: "underline",
   },
 });

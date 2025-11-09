@@ -2,9 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker'; // Import thư viện vừa cài
+import * as ImagePicker from 'expo-image-picker'; // thư viện tải ảnh 
 
-// Component cho mỗi hàng tùy chọn (không đổi)
 const OptionItem = ({ icon, label, onPress }) => (
   <TouchableOpacity style={styles.optionButton} onPress={onPress}>
     <Feather name={icon} size={22} color="#555" />
@@ -15,42 +14,39 @@ const OptionItem = ({ icon, label, onPress }) => (
 
 export default function OptionsScreen({ navigation }) {
   const [username, setUsername] = useState('Người dùng');
-  const [avatarUri, setAvatarUri] = useState(null); // State mới để lưu ảnh đại diện
+  const [avatarUri, setAvatarUri] = useState(null); 
 
-  // Hàm này chạy khi màn hình được tải
+ 
   useEffect(() => {
     loadUserData();
   }, []);
 
-  // Hàm tải thông tin user (username và avatar đã lưu)
+ 
   const loadUserData = async () => {
     const storedUsername = await AsyncStorage.getItem('username');
-    const storedAvatar = await AsyncStorage.getItem('avatar_url'); // Lấy avatar_url
+    const storedAvatar = await AsyncStorage.getItem('avatar_url'); 
     if (storedUsername) setUsername(storedUsername);
     if (storedAvatar) setAvatarUri(storedAvatar);
   };
 
-  // Hàm chọn ảnh mới
+ 
   const pickImage = async () => {
-    // Xin quyền truy cập thư viện ảnh
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Từ chối!', 'Bạn cần cấp quyền truy cập thư viện ảnh để đổi avatar.');
       return;
     }
 
-    // Mở thư viện ảnh
+
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [1, 1], // Buộc ảnh phải là hình vuông
-      quality: 0.5, // Giảm chất lượng ảnh để upload nhanh hơn
+      aspect: [1, 1], 
+      quality: 0.5, 
     });
 
     if (!result.canceled) {
-      // Lấy ảnh đầu tiên
       const selectedImage = result.assets[0];
-      // Gọi hàm upload
       await uploadAvatar(selectedImage.uri);
     }
   };
@@ -73,7 +69,6 @@ export default function OptionsScreen({ navigation }) {
         method: "POST",
         headers: {
           'Authorization': 'Bearer ' + token,
-          // Không cần 'Content-Type': 'multipart/form-data', FormData tự set
         },
         body: formData,
       });
@@ -84,11 +79,8 @@ export default function OptionsScreen({ navigation }) {
         throw new Error(data.error || 'Lỗi không xác định');
       }
 
-      // Upload thành công
       Alert.alert("Thành công", "Đã cập nhật ảnh đại diện!");
-      // Cập nhật ảnh trên giao diện
       setAvatarUri(data.avatar_url); 
-      // Lưu lại link ảnh mới vào AsyncStorage
       await AsyncStorage.setItem('avatar_url', data.avatar_url);
 
     } catch (err) {

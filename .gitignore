@@ -1,2 +1,21 @@
-node_modules
-node_modules
+node_modules/
+.expo/
+.expo-shared/
+
+# Metro
+.cache/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build
+android/
+ios/
+build/
+dist/
+
+# Misc
+.DS_Store
+.env
