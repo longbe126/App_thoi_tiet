@@ -25,9 +25,7 @@ export default function ExportScreen() {
     loadUserInfo();
   }, []);
 
-  // ======================================
-  // Lấy thông tin user
-  // ======================================
+  // ========================= LẤY THÔNG TIN USER =========================
   const loadUserInfo = async () => {
     try {
       const token = await AsyncStorage.getItem("token");
@@ -48,9 +46,18 @@ export default function ExportScreen() {
     }
   };
 
-  // ======================================
-  // Lấy thời tiết (Hà Nội default)
-  // ======================================
+  
+  const getDaysRegistered = (created_at) => {
+    const createDate = new Date(created_at);
+    const now = new Date();
+
+    const diffMs = now - createDate;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    return diffDays;
+  };
+
+  
   const getWeatherReport = async () => {
     const geo = await geocodeCity("Hà Nội");
     const loc = geo[0];
@@ -61,10 +68,8 @@ export default function ExportScreen() {
     });
   };
 
-  // ======================================
-  // HTML PDF
-  // ======================================
-  const createPDF_HTML = (user, weather) => {
+  // ========================= HTML PDF =========================
+  const createPDF_HTML = (user, days, weather) => {
     const dailyRows = weather.daily.time
       .map(
         (d, i) => `
@@ -73,8 +78,7 @@ export default function ExportScreen() {
         <td>${weather.daily.temperature_2m_max[i]}°C</td>
         <td>${weather.daily.temperature_2m_min[i]}°C</td>
         <td>${weather.daily.precipitation_probability_max[i]}%</td>
-      </tr>
-    `
+      </tr>`
       )
       .join("");
 
@@ -103,13 +107,14 @@ export default function ExportScreen() {
           <p><span class="label">Email:</span> ${user.email}</p>
           <p><span class="label">Điện thoại:</span> ${user.phone}</p>
           <p><span class="label">Vai trò:</span> ${user.role}</p>
-          <p><span class="label">Ngày tạo:</span> 
+          <p><span class="label">Ngày tạo tài khoản:</span> 
             ${new Date(user.created_at).toLocaleDateString("vi-VN")}
           </p>
+          <p><span class="label">Số ngày đã sử dụng:</span> ${days} ngày</p>
         </div>
 
         <div class="box">
-          <h3>2. Thời tiết hiện tại (Hà Nội)</h3>
+          <h3>2. Thời tiết hiện tại</h3>
           <p>Nhiệt độ: ${weather.current.temperature_2m}°C</p>
           <p>Cảm giác như: ${weather.current.apparent_temperature}°C</p>
           <p>Gió: ${weather.current.wind_speed_10m} km/h</p>
@@ -133,27 +138,23 @@ export default function ExportScreen() {
     `;
   };
 
-  // ======================================
-  // Xuất PDF + Ghi log
-  // ======================================
+  // ========================= XUẤT PDF =========================
   const exportPDF = async () => {
     if (!userInfo) return;
 
     setLoading(true);
 
     try {
-      // Lấy dữ liệu thời tiết
+      const days = getDaysRegistered(userInfo.created_at);
+
       const weather = await getWeatherReport();
 
-      // Tạo HTML
-      const html = createPDF_HTML(userInfo, weather);
+      const html = createPDF_HTML(userInfo, days, weather);
 
-      // Tạo file PDF tạm
       const { uri } = await Print.printToFileAsync({ html });
 
-      // Ghi log lên server
+      // Ghi log
       const token = await AsyncStorage.getItem("token");
-
       await fetch("http://10.0.2.2:3000/log-export", {
         method: "POST",
         headers: {
@@ -161,20 +162,18 @@ export default function ExportScreen() {
           Authorization: "Bearer " + token
         },
         body: JSON.stringify({
-          details: `Xuất báo cáo PDF lúc ${new Date().toLocaleString("vi-VN")}`
+          details: `Xuất PDF lúc ${new Date().toLocaleString("vi-VN")}`
         })
       });
 
-      // Cho chọn: Lưu hoặc Chia sẻ
-      Alert.alert(
-        "Xuất file",
-        "Bạn muốn lưu ở đâu?",
+      Alert.alert("Xuất file", "Chọn nơi lưu",
         [
           { text: "📁 Lưu vào thư mục", onPress: () => saveToDevice(uri) },
           { text: "📤 Chia sẻ", onPress: () => shareViaApp(uri) },
           { text: "Hủy", style: "cancel" }
         ]
       );
+
     } catch (err) {
       console.log(err);
       Alert.alert("Lỗi", "Không thể xuất PDF");
@@ -183,13 +182,11 @@ export default function ExportScreen() {
     setLoading(false);
   };
 
-  // ======================================
-  // Lưu file vào folder
-  // ======================================
+  // ========================= LƯU FILE =========================
   const saveToDevice = async (fileUri) => {
     try {
-      const permission =
-        await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+      const permission = await FileSystem.StorageAccessFramework
+        .requestDirectoryPermissionsAsync();
 
       if (!permission.granted) return;
 
@@ -200,37 +197,31 @@ export default function ExportScreen() {
       const fileName = `BaoCao_${Date.now()}.pdf`;
 
       const newUri = await FileSystem.StorageAccessFramework.createFileAsync(
-        permission.directoryUri,
-        fileName,
-        "application/pdf"
+        permission.directoryUri, fileName, "application/pdf"
       );
 
       await FileSystem.writeAsStringAsync(newUri, pdfBase64, {
         encoding: FileSystem.EncodingType.Base64
       });
 
-      Alert.alert("✅ Đã lưu!", "File đã lưu vào thư mục bạn chọn");
+      Alert.alert("✅ Thành công", "File đã lưu");
     } catch (err) {
       console.log(err);
       Alert.alert("Lỗi", "Không thể lưu file");
     }
   };
 
-  // ======================================
-  // Chia sẻ
-  // ======================================
+  // ========================= SHARE =========================
   const shareViaApp = async (fileUri) => {
     try {
       await Sharing.shareAsync(fileUri);
     } catch (err) {
-      Alert.alert("Lỗi", "Không thể chia sẻ file");
       console.log(err);
+      Alert.alert("Lỗi", "Không thể chia sẻ");
     }
   };
 
-  // ======================================
-  // UI
-  // ======================================
+  // ========================= UI =========================
   if (loadingProfile) {
     return (
       <View style={styles.center}>
@@ -239,6 +230,8 @@ export default function ExportScreen() {
       </View>
     );
   }
+
+  const days = getDaysRegistered(userInfo.created_at);
 
   return (
     <ScrollView style={styles.container}>
@@ -253,6 +246,9 @@ export default function ExportScreen() {
 
         <Text style={styles.label}>Điện thoại:</Text>
         <Text>{userInfo.phone}</Text>
+
+        <Text style={styles.label}>Đã đăng ký được:</Text>
+        <Text>{days} ngày</Text>
       </View>
 
       <TouchableOpacity

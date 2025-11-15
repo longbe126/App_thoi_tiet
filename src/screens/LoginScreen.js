@@ -5,9 +5,8 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
+  Image,
+  Alert
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -15,141 +14,122 @@ export default function LoginScreen({ navigation }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
-const onLogin = async () => {
-  if (!username || !password) {
-    Alert.alert("Thiếu thông tin", "Nhập đủ username và password");
-    return;
-  }
-
-  try {
-    const res = await fetch("http://10.0.2.2:3000/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      Alert.alert("Đăng nhập thất bại", data.error || "Có lỗi xảy ra");
-      return;
+  const handleLogin = async () => {
+    if (!username || !password) {
+      return Alert.alert("Lỗi", "Vui lòng nhập đầy đủ");
     }
 
-    await AsyncStorage.setItem("token", data.token);
-    await AsyncStorage.setItem("role", data.role);
-    await AsyncStorage.setItem("userId", String(data.userId));
-    await AsyncStorage.setItem("username", username);
+    try {
+      const res = await fetch("http://10.0.2.2:3000/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
 
-    if (data.avatar_url) {
-      await AsyncStorage.setItem("avatar_url", data.avatar_url);
+      const data = await res.json();
+      if (!res.ok) return Alert.alert("Lỗi", data.error);
+
+      // Lưu token
+      await AsyncStorage.setItem("token", data.token);
+
+      // ✅ Điều hướng ĐÚNG SANG MÀN HÌNH "Main"
+      navigation.replace("Main", { role: data.role });
+
+    } catch (err) {
+      Alert.alert("Lỗi", "Không thể kết nối server");
     }
-    
-
-    Alert.alert("Thành công", "Đăng nhập thành công!");
-    navigation.replace("Main", { role: data.role });
-  } catch (err) {
-    console.error(err);
-    Alert.alert("Lỗi", "Không kết nối được tới server");
-  }
-};
+  };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <View style={styles.form}>
-        <Text style={styles.title}>🌤Long Night</Text>
-        <Text style={styles.subtitle}>Đăng nhập để tiếp tục</Text>
+    <View style={styles.container}>
+      
+      {/* LOGO */}
+      <Image
+        source={require("../../assets/logoDAU.jpg")}
+        style={styles.logo}
+      />
 
+      {/* TÊN THƯƠNG HIỆU */}
+      <Text style={styles.brand}>🌙 Long Night</Text>
+
+      <Text style={styles.subtitle}>Đăng nhập để tiếp tục</Text>
+
+      <View style={styles.card}>
         <TextInput
+          style={styles.input}
           placeholder="Tên đăng nhập"
           value={username}
           onChangeText={setUsername}
-          style={styles.input}
         />
 
         <TextInput
+          style={styles.input}
           placeholder="Mật khẩu"
           secureTextEntry
           value={password}
           onChangeText={setPassword}
-          style={styles.input}
         />
 
-        <TouchableOpacity style={styles.button} onPress={onLogin}>
-          <Text style={styles.buttonText}>ĐĂNG NHẬP</Text>
+        <TouchableOpacity style={styles.btn} onPress={handleLogin}>
+          <Text style={styles.btnText}>ĐĂNG NHẬP</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.linkButton}
-          onPress={() => navigation.navigate("Register")}
-        >
-          <Text style={styles.linkText}>Chưa có tài khoản? Đăng ký</Text>
+        <TouchableOpacity onPress={() => navigation.navigate("Register")}>
+          <Text style={styles.link}>Chưa có tài khoản? Đăng ký</Text>
         </TouchableOpacity>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    backgroundColor: "#f5f7fa",
-    padding: 20,
-  },
-  form: {
-    backgroundColor: "#fff",
-    borderRadius: 15,
-    padding: 25,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 5,
-    elevation: 5,
-  },
-  title: {
+  container: { flex: 1, alignItems: "center", paddingTop: 80, backgroundColor: "#eef5ff" },
+
+  logo: { width: 100, height: 100, borderRadius: 16, marginBottom: 10 },
+
+  brand: {
     fontSize: 28,
+    color: "#3D79FF",
     fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 5,
-    color: "#4facfe",
+    marginBottom: 4
   },
+
   subtitle: {
-    fontSize: 14,
-    textAlign: "center",
-    marginBottom: 20,
-    color: "#666",
+    color: "#555",
+    marginBottom: 30
   },
+
+  card: {
+    width: "88%",
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 20,
+    elevation: 5
+  },
+
   input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
+    backgroundColor: "#f4f7ff",
+    padding: 14,
     borderRadius: 10,
-    padding: 12,
-    marginBottom: 15,
-    fontSize: 16,
-    backgroundColor: "#f9f9f9",
+    marginTop: 10
   },
-  button: {
-    backgroundColor: "#4facfe",
-    padding: 15,
-    borderRadius: 10,
-    alignItems: "center",
-    marginBottom: 10,
+
+  btn: {
+    backgroundColor: "#4a90ff",
+    padding: 14,
+    marginTop: 20,
+    borderRadius: 10
   },
-  buttonText: {
+
+  btnText: {
     color: "#fff",
-    fontWeight: "bold",
-    fontSize: 18,
+    textAlign: "center",
+    fontWeight: "bold"
   },
-  linkButton: {
-    alignItems: "center",
-    marginTop: 5,
-  },
-  linkText: {
-    color: "#4facfe",
-    fontSize: 14,
-    textDecorationLine: "underline",
-  },
+
+  link: {
+    marginTop: 15,
+    color: "#4a90ff",
+    textAlign: "center"
+  }
 });
