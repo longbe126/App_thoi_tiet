@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LineChart } from "react-native-chart-kit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_BASE } from '../config';
 
 import { geocodeCity, fetchWeather } from "../services/weather";
 
@@ -106,7 +107,7 @@ const addFavoriteCity = async (city) => {
   const token = await AsyncStorage.getItem("token");
   if (!token) return Alert.alert("Bạn chưa đăng nhập");
 
-  await fetch("http://10.0.2.2:3000/favorites", {
+  await fetch(`${API_BASE}/favorites`, {
     method: "POST",
     headers: {
       "Authorization": "Bearer " + token,

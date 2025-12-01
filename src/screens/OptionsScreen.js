@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE } from '../config';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker'; // thư viện tải ảnh 
 
@@ -13,7 +14,8 @@ const OptionItem = ({ icon, label, onPress }) => (
 );
 
 export default function OptionsScreen({ navigation }) {
-  const [username, setUsername] = useState('Người dùng');
+  const [username, setUsername] = useState(null);
+  const [fullName, setFullName] = useState('Người dùng');
   const [avatarUri, setAvatarUri] = useState(null); 
 
  
@@ -24,9 +26,42 @@ export default function OptionsScreen({ navigation }) {
  
   const loadUserData = async () => {
     const storedUsername = await AsyncStorage.getItem('username');
+    const storedFullname = await AsyncStorage.getItem('fullname');
     const storedAvatar = await AsyncStorage.getItem('avatar_url'); 
+    const makeFullUrl = (u) => {
+      if (!u) return null;
+      // If server returned a relative path like '/uploads/..', prefix the API host for emulator
+      if (u.startsWith('http') || u.startsWith('file:')) return u;
+      return `${API_BASE}${u}`;
+    };
+
     if (storedUsername) setUsername(storedUsername);
-    if (storedAvatar) setAvatarUri(storedAvatar);
+    if (storedFullname) setFullName(storedFullname);
+
+    // Try to fetch latest profile from server (if logged in) so we get server-stored avatar
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (token) {
+        const res = await fetch(`${API_BASE}/api/user/profile`, {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data) {
+            if (data.fullname) setFullName(data.fullname);
+            if (data.avatar_url) {
+              setAvatarUri(makeFullUrl(data.avatar_url));
+              return; // loaded from server, done
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.log('Profile fetch failed:', e);
+    }
+
+    // fallback to local stored value
+    if (storedAvatar) setAvatarUri(makeFullUrl(storedAvatar));
   };
 
  
@@ -65,7 +100,7 @@ export default function OptionsScreen({ navigation }) {
     });
 
     try {
-      const res = await fetch("http://10.0.2.2:3000/upload-avatar", {
+      const res = await fetch(`${API_BASE}/upload-avatar`, {
         method: "POST",
         headers: {
           'Authorization': 'Bearer ' + token,
@@ -80,7 +115,14 @@ export default function OptionsScreen({ navigation }) {
       }
 
       Alert.alert("Thành công", "Đã cập nhật ảnh đại diện!");
-      setAvatarUri(data.avatar_url); 
+      // Normalize returned avatar URL: if server returns a relative path, prefix it
+      const makeFullUrl = (u) => {
+        if (!u) return null;
+        if (u.startsWith('http') || u.startsWith('file:')) return u;
+        return `${API_BASE}${u}`;
+      };
+      const avatarFull = makeFullUrl(data.avatar_url);
+      setAvatarUri(avatarFull);
       await AsyncStorage.setItem('avatar_url', data.avatar_url);
 
     } catch (err) {
@@ -98,14 +140,14 @@ export default function OptionsScreen({ navigation }) {
             {avatarUri ? (            
               <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
             ) : (
-              <Text style={styles.avatarText}>{username.charAt(0).toUpperCase()}</Text>
+              <Text style={styles.avatarText}>{(fullName || username || 'Người dùng').charAt(0).toUpperCase()}</Text>
             )}
             <View style={styles.editIcon}>
               <Feather name="edit-2" size={14} color="#fff" />
             </View>
           </View>
         </TouchableOpacity>
-        <Text style={styles.username}>{username}</Text>
+        <Text style={styles.username}>{fullName || username || 'Người dùng'}</Text>
       </View>
 
       {/* --- danh sách tùy chọn --- */}

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_BASE } from '../config';
 
 export default function AdminScreen() {
   const [users, setUsers] = useState([]);
@@ -18,7 +19,7 @@ export default function AdminScreen() {
 
   const fetchUsers = async (t) => {
     try {
-      const res = await fetch("http://10.0.2.2:3000/admin/users", {
+      const res = await fetch(`${API_BASE}/admin/users`, {
         headers: { Authorization: "Bearer " + t },
       });
       if (!res.ok) {

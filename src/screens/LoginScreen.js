@@ -6,44 +6,70 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
-  Alert
+  Alert,
+  ActivityIndicator
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_BASE } from '../config';
+
+// --- QUAN TRỌNG: Import hàm setSession và saveUser ---
+import { setSession, saveUser } from "../utils/storage";
 
 export default function LoginScreen({ navigation }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false); // Thêm trạng thái loading
 
   const handleLogin = async () => {
     if (!username || !password) {
       return Alert.alert("Lỗi", "Vui lòng nhập đầy đủ");
     }
 
+    setLoading(true); // Bắt đầu xoay
+
     try {
-      const res = await fetch("http://10.0.2.2:3000/login", {
+      const res = await fetch(`${API_BASE}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password })
       });
 
       const data = await res.json();
-      if (!res.ok) return Alert.alert("Lỗi", data.error);
+      if (!res.ok) throw new Error(data.error || "Đăng nhập thất bại");
 
-      // 🔥 XÓA TOKEN CŨ → TRÁNH LỖI QUYỀN
-      await AsyncStorage.removeItem("token");
-      await AsyncStorage.removeItem("role");
-      await AsyncStorage.removeItem("userId");
-
-      // 🔥 LƯU TOKEN & ROLE MỚI
+      // 1. Lưu Token (để gọi API sau này)
       await AsyncStorage.setItem("token", data.token);
-      await AsyncStorage.setItem("role", data.role);
-      await AsyncStorage.setItem("userId", String(data.userId));
 
-      // 🔥 ĐI ĐẾN Main → để App.js xác định admin/user
+      // 2. --- KHÚC QUAN TRỌNG NHẤT ĐỂ SỬA LỖI DỮ LIỆU LẪN LỘN ---
+      // Thiết lập phiên làm việc riêng cho user này
+      await setSession(username);
+      
+      // 3. Lưu thông tin user (bao gồm link ảnh đại diện mới nhất)
+      // Lưu fullname và avatar nếu server trả
+      if (data.fullname) {
+        await AsyncStorage.setItem('fullname', data.fullname);
+      }
+      if (data.avatar_url) {
+        await AsyncStorage.setItem('avatar_url', data.avatar_url);
+      }
+
+      await saveUser({
+          username: username,
+          role: data.role,
+          userId: data.userId,
+          fullname: data.fullname || null,
+          avatar_url: data.avatar_url || null // Link ảnh từ server trả về
+      });
+
+      Alert.alert("Thành công", "Đăng nhập thành công!");
+
+      // 4. Chuyển hướng
       navigation.replace("Main", { role: data.role });
 
     } catch (err) {
-      Alert.alert("Lỗi", "Không thể kết nối server");
+      Alert.alert("Lỗi", err.message || "Không thể kết nối server");
+    } finally {
+      setLoading(false); // Tắt xoay
     }
   };
 
@@ -64,6 +90,7 @@ export default function LoginScreen({ navigation }) {
           placeholder="Tên đăng nhập"
           value={username}
           onChangeText={setUsername}
+          autoCapitalize="none"
         />
 
         <TextInput
@@ -74,8 +101,16 @@ export default function LoginScreen({ navigation }) {
           onChangeText={setPassword}
         />
 
-        <TouchableOpacity style={styles.btn} onPress={handleLogin}>
-          <Text style={styles.btnText}>ĐĂNG NHẬP</Text>
+        <TouchableOpacity 
+            style={[styles.btn, loading && { opacity: 0.7 }]} 
+            onPress={handleLogin}
+            disabled={loading}
+        >
+          {loading ? (
+              <ActivityIndicator color="white" />
+          ) : (
+              <Text style={styles.btnText}>ĐĂNG NHẬP</Text>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => navigation.navigate("Register")}>
@@ -122,7 +157,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#4a90ff",
     padding: 14,
     marginTop: 20,
-    borderRadius: 10
+    borderRadius: 10,
+    alignItems: 'center' // Căn giữa vòng xoay loading
   },
 
   btnText: {

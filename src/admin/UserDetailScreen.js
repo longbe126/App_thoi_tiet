@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_BASE } from '../config';
 
 export default function UserDetailScreen({ route, navigation }) {
   const { user } = route.params;
@@ -9,7 +10,7 @@ export default function UserDetailScreen({ route, navigation }) {
   const updateRole = async (newRole) => {
     const token = await AsyncStorage.getItem("token");
 
-    await fetch(`http://10.0.2.2:3000/admin/user/${user.id}/role`, {
+    await fetch(`${API_BASE}/admin/user/${user.id}/role`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -30,7 +31,7 @@ export default function UserDetailScreen({ route, navigation }) {
         onPress: async () => {
           const token = await AsyncStorage.getItem("token");
 
-          await fetch(`http://10.0.2.2:3000/admin/user/${user.id}`, {
+          await fetch(`${API_BASE}/admin/user/${user.id}`, {
             method: "DELETE",
             headers: { Authorization: "Bearer " + token },
           });

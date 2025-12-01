@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { clearSession } from "../utils/storage";
+import { API_BASE } from '../config';
 
 export default function AdminHomeScreen({ navigation }) {
   const [stats, setStats] = useState(null);
@@ -19,7 +21,7 @@ export default function AdminHomeScreen({ navigation }) {
         return;
       }
 
-      const res = await fetch("http://10.0.2.2:3000/admin/dashboard", {
+      const res = await fetch(`${API_BASE}/admin/dashboard`, {
         headers: { Authorization: "Bearer " + token }
       });
 
@@ -105,7 +107,13 @@ export default function AdminHomeScreen({ navigation }) {
       <TouchableOpacity
         style={styles.logoutBtn}
         onPress={async () => {
-          await AsyncStorage.clear();
+          // Clear only admin session and token, don't wipe app storage
+          try {
+            await clearSession();
+            await AsyncStorage.removeItem('token');
+          } catch (e) {
+            console.log('Error clearing admin session:', e);
+          }
           navigation.replace("Login");
         }}
       >

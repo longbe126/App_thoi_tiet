@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_BASE } from '../config';
 
 export default function ManageAccountsScreen({ navigation }) {
   const [users, setUsers] = useState([]);
@@ -11,7 +12,7 @@ export default function ManageAccountsScreen({ navigation }) {
 
   const loadUsers = async () => {
     const token = await AsyncStorage.getItem("token");
-    const res = await fetch("http://10.0.2.2:3000/admin/users", {
+    const res = await fetch(`${API_BASE}/admin/users`, {
       headers: { Authorization: "Bearer " + token },
     });
     const data = await res.json();
