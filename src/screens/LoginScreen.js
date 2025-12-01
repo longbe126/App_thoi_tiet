@@ -29,10 +29,17 @@ export default function LoginScreen({ navigation }) {
       const data = await res.json();
       if (!res.ok) return Alert.alert("Lỗi", data.error);
 
-      // Lưu token
-      await AsyncStorage.setItem("token", data.token);
+      // 🔥 XÓA TOKEN CŨ → TRÁNH LỖI QUYỀN
+      await AsyncStorage.removeItem("token");
+      await AsyncStorage.removeItem("role");
+      await AsyncStorage.removeItem("userId");
 
-      // ✅ Điều hướng ĐÚNG SANG MÀN HÌNH "Main"
+      // 🔥 LƯU TOKEN & ROLE MỚI
+      await AsyncStorage.setItem("token", data.token);
+      await AsyncStorage.setItem("role", data.role);
+      await AsyncStorage.setItem("userId", String(data.userId));
+
+      // 🔥 ĐI ĐẾN Main → để App.js xác định admin/user
       navigation.replace("Main", { role: data.role });
 
     } catch (err) {
@@ -43,15 +50,12 @@ export default function LoginScreen({ navigation }) {
   return (
     <View style={styles.container}>
       
-      {/* LOGO */}
       <Image
         source={require("../../assets/logoDAU.jpg")}
         style={styles.logo}
       />
 
-      {/* TÊN THƯƠNG HIỆU */}
       <Text style={styles.brand}>🌙 Long Night</Text>
-
       <Text style={styles.subtitle}>Đăng nhập để tiếp tục</Text>
 
       <View style={styles.card}>
